@@ -9,7 +9,8 @@ import {
   Bell,
   Search,
   Menu,
-  Building2
+  Building2,
+  FileText
 } from 'lucide-react';
 import GeoRing from './components/GeoRing';
 import Departments from './pages/Departments';

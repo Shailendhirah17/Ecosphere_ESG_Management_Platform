@@ -27,12 +27,13 @@ const challenge_participations_module_1 = require("./challenge-participations/ch
 const badges_module_1 = require("./badges/badges.module");
 const rewards_module_1 = require("./rewards/rewards.module");
 const employee_wallets_module_1 = require("./employee-wallets/employee-wallets.module");
+const department_scores_module_1 = require("./department-scores/department-scores.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [departments_module_1.DepartmentsModule, emission_factors_module_1.EmissionFactorsModule, carbon_transactions_module_1.CarbonTransactionsModule, environmental_goals_module_1.EnvironmentalGoalsModule, prisma_module_1.PrismaModule, categories_module_1.CategoriesModule, csr_activities_module_1.CsrActivitiesModule, employee_participations_module_1.EmployeeParticipationsModule, esg_policies_module_1.EsgPoliciesModule, policy_acknowledgements_module_1.PolicyAcknowledgementsModule, audits_module_1.AuditsModule, compliance_issues_module_1.ComplianceIssuesModule, challenges_module_1.ChallengesModule, challenge_participations_module_1.ChallengeParticipationsModule, badges_module_1.BadgesModule, rewards_module_1.RewardsModule, employee_wallets_module_1.EmployeeWalletsModule],
+        imports: [departments_module_1.DepartmentsModule, emission_factors_module_1.EmissionFactorsModule, carbon_transactions_module_1.CarbonTransactionsModule, environmental_goals_module_1.EnvironmentalGoalsModule, prisma_module_1.PrismaModule, categories_module_1.CategoriesModule, csr_activities_module_1.CsrActivitiesModule, employee_participations_module_1.EmployeeParticipationsModule, esg_policies_module_1.EsgPoliciesModule, policy_acknowledgements_module_1.PolicyAcknowledgementsModule, audits_module_1.AuditsModule, compliance_issues_module_1.ComplianceIssuesModule, challenges_module_1.ChallengesModule, challenge_participations_module_1.ChallengeParticipationsModule, badges_module_1.BadgesModule, rewards_module_1.RewardsModule, employee_wallets_module_1.EmployeeWalletsModule, department_scores_module_1.DepartmentScoresModule],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })

@@ -43,7 +43,8 @@ export class CarbonTransactionsService {
         calculated_co2e,
         calculation_mode: 'Auto',
         transaction_date: new Date(transaction_date),
-        created_by
+        created_by,
+        scope: factor.scope
       }
     });
   }

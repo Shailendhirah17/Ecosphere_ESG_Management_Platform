@@ -1,32 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { Leaf, Plus, Edit2, Trash2, Filter, Search, BarChart3, Database, Target } from 'lucide-react';
+import { Leaf, Plus, Edit2, Trash2, Filter, Search, BarChart3, Database, Target, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Modal from '../components/Modal';
 
 export default function Environmental() {
-  const [activeTab, setActiveTab] = useState<'factors' | 'transactions' | 'goals'>('transactions');
+  const [activeTab, setActiveTab] = useState<'factors' | 'transactions' | 'goals' | 'offsets'>('transactions');
   
   // Data States
   const [factors, setFactors] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [goals, setGoals] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [offsets, setOffsets] = useState<any[]>([]);
 
   // Modal States
   const [isEmissionModalOpen, setIsEmissionModalOpen] = useState(false);
   const [isFactorModalOpen, setIsFactorModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [isOffsetModalOpen, setIsOffsetModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form States
   const [emissionForm, setEmissionForm] = useState({ department_id: '', emission_factor_id: '', source_type: 'Facility', source_record_id: '', quantity: '' });
-  const [factorForm, setFactorForm] = useState({ name: '', activity_type: 'Facility', unit: '', co2e_per_unit: '', source: '', effective_from: new Date().toISOString().split('T')[0] });
+  const [factorForm, setFactorForm] = useState({ name: '', activity_type: 'Facility', unit: '', co2e_per_unit: '', source: '', effective_from: new Date().toISOString().split('T')[0], scope: 'Scope 3' });
   const [goalForm, setGoalForm] = useState({ metric_type: 'Carbon Reduction', target_value: '', unit: '', target_date: new Date().toISOString().split('T')[0], baseline_value: '' });
+  const [offsetForm, setOffsetForm] = useState({ project_name: '', credits_tonnes: '', date_purchased: new Date().toISOString().split('T')[0], certificate_url: '' });
 
   const fetchData = () => {
     fetch('http://localhost:3000/emission-factors').then(r => r.json()).then(setFactors).catch(console.error);
     fetch('http://localhost:3000/carbon-transactions').then(r => r.json()).then(setTransactions).catch(console.error);
     fetch('http://localhost:3000/environmental-goals').then(r => r.json()).then(setGoals).catch(console.error);
     fetch('http://localhost:3000/departments').then(r => r.json()).then(setDepartments).catch(console.error);
+    fetch('http://localhost:3000/carbon-offsets').then(r => r.json()).then(setOffsets).catch(console.error);
   };
 
   useEffect(() => {
@@ -127,6 +132,61 @@ export default function Environmental() {
     }
   };
 
+  const handleAddOffset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('http://localhost:3000/carbon-offsets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...offsetForm,
+          credits_tonnes: parseFloat(offsetForm.credits_tonnes),
+          date_purchased: new Date(offsetForm.date_purchased).toISOString(),
+          status: 'Active'
+        })
+      });
+      if (res.ok) {
+        setIsOffsetModalOpen(false);
+        setOffsetForm({ project_name: '', credits_tonnes: '', date_purchased: new Date().toISOString().split('T')[0], certificate_url: '' });
+        fetchData();
+      } else {
+        alert('Failed to add offset');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const totalGrossEmissions = transactions.reduce((acc, t) => acc + (t.calculated_co2e || 0), 0);
+  const totalOffsets = offsets.reduce((acc, o) => acc + (o.credits_tonnes || 0), 0);
+  const netEmissions = totalGrossEmissions - totalOffsets;
+
+  const currentYear = new Date().getFullYear();
+  const predictiveData = [
+    { year: currentYear - 2, actual: netEmissions * 1.2, target: netEmissions * 1.2 },
+    { year: currentYear - 1, actual: netEmissions * 1.1, target: netEmissions * 1.1 },
+    { year: currentYear, actual: netEmissions, target: netEmissions },
+    { year: currentYear + 1, actual: null, target: netEmissions * 0.9 },
+    { year: currentYear + 2, actual: null, target: netEmissions * 0.8 },
+    { year: currentYear + 3, actual: null, target: netEmissions * 0.7 },
+  ];
+
+  const emissionsByScope = transactions.reduce((acc, t) => {
+    const scope = t.scope || 'Scope 3';
+    acc[scope] = (acc[scope] || 0) + (t.calculated_co2e || 0);
+    return acc;
+  }, {} as Record<string, number>);
+
+  const isStale = (dateStr: string) => {
+    if (!dateStr) return false;
+    const ageInMs = new Date().getTime() - new Date(dateStr).getTime();
+    return ageInMs > 365 * 24 * 60 * 60 * 1000;
+  };
+
   return (
     <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
@@ -140,6 +200,44 @@ export default function Environmental() {
           <p className="text-sage-500">
             Track carbon emissions, manage emission factors, and set reduction goals.
           </p>
+        </div>
+      </div>
+
+      {/* DASHBOARD OVERVIEW */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="md:col-span-1 flex flex-col gap-6">
+          <div className="bg-ivory dark:bg-ash-900 p-6 rounded-3xl border border-sage-100 dark:border-ash-800 shadow-sm flex flex-col items-center justify-center text-center flex-1">
+             <h3 className="text-sm font-semibold uppercase tracking-wider text-sage-500 mb-2">Net Emissions</h3>
+             <p className="text-5xl font-display font-bold text-forest-900 dark:text-ivory mb-2">{netEmissions.toFixed(1)}</p>
+             <p className="text-sage-600 dark:text-sage-400 text-sm">tCO2e (Gross - Offsets)</p>
+          </div>
+          <div className="bg-ivory dark:bg-ash-900 p-6 rounded-3xl border border-sage-100 dark:border-ash-800 shadow-sm flex-1">
+             <h3 className="text-sm font-semibold uppercase tracking-wider text-sage-500 mb-4">By Scope</h3>
+             <div className="space-y-3">
+               {['Scope 1', 'Scope 2', 'Scope 3'].map(s => (
+                 <div key={s} className="flex justify-between items-center text-sm">
+                   <span className="font-medium text-forest-900 dark:text-ivory">{s}</span>
+                   <span className="text-sage-600 dark:text-sage-400">{emissionsByScope[s]?.toFixed(1) || '0.0'} tCO2e</span>
+                 </div>
+               ))}
+             </div>
+          </div>
+        </div>
+        <div className="md:col-span-2 bg-ivory dark:bg-ash-900 p-6 rounded-3xl border border-sage-100 dark:border-ash-800 shadow-sm h-[320px]">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-sage-500 mb-4">Predictive Goals path</h3>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={predictiveData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+              <Tooltip 
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              />
+              <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '12px' }} />
+              <Line type="monotone" dataKey="actual" name="Actual Emissions" stroke="#047857" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+              <Line type="monotone" dataKey="target" name="Target Path" stroke="#fbbf24" strokeWidth={3} strokeDasharray="5 5" dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -164,6 +262,13 @@ export default function Environmental() {
         >
           <Target className="w-4 h-4 mr-2" />
           Reduction Goals
+        </button>
+        <button
+          onClick={() => setActiveTab('offsets')}
+          className={`flex items-center px-5 py-2.5 text-sm font-semibold rounded-xl transition-all ${activeTab === 'offsets' ? 'bg-white dark:bg-ash-900 text-forest-900 dark:text-ivory shadow-sm' : 'text-sage-600 dark:text-sage-400 hover:bg-white/50 dark:hover:bg-ash-900/50'}`}
+        >
+          <ShieldCheck className="w-4 h-4 mr-2" />
+          Carbon Offsets
         </button>
       </div>
 
@@ -190,6 +295,7 @@ export default function Environmental() {
                   <th className="px-6 py-4">ID</th>
                   <th className="px-6 py-4">Department</th>
                   <th className="px-6 py-4">Source Type</th>
+                  <th className="px-6 py-4">Scope</th>
                   <th className="px-6 py-4 text-right">Quantity</th>
                   <th className="px-6 py-4 text-right">tCO2e</th>
                   <th className="px-6 py-4">Date</th>
@@ -215,6 +321,11 @@ export default function Environmental() {
                     <td className="px-6 py-4">
                       <span className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider bg-sage-100 text-sage-700 dark:bg-ash-800 dark:text-sage-400 rounded-lg">
                         {t.source_type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 text-[10px] uppercase font-bold tracking-wider rounded-lg ${t.scope === 'Scope 1' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : t.scope === 'Scope 2' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'}`}>
+                        {t.scope || 'Scope 3'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">{t.quantity}</td>
@@ -243,7 +354,9 @@ export default function Environmental() {
                 <tr>
                   <th className="px-6 py-4">Name</th>
                   <th className="px-6 py-4">Activity Type</th>
+                  <th className="px-6 py-4">Scope</th>
                   <th className="px-6 py-4">Source</th>
+                  <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-right">Value (kgCO2e/unit)</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
@@ -267,7 +380,20 @@ export default function Environmental() {
                         {f.activity_type}
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-sage-600 dark:text-sage-400 text-sm font-medium">{f.scope || 'Scope 3'}</td>
                     <td className="px-6 py-4 text-sage-500 line-clamp-1">{f.source}</td>
+                    <td className="px-6 py-4">
+                      {isStale(f.effective_from) ? (
+                        <div className="flex items-center gap-1 text-status-critical bg-status-critical/10 px-2 py-1 rounded-lg w-fit">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span className="text-[10px] uppercase font-bold tracking-wider">Outdated</span>
+                        </div>
+                      ) : (
+                        <span className="px-2 py-1 text-[10px] uppercase font-bold tracking-wider bg-status-success/10 text-status-success rounded-lg">
+                          Valid
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right font-mono text-sm">{f.co2e_per_unit} {f.unit}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
@@ -318,6 +444,54 @@ export default function Environmental() {
                 <p className="text-sm">Define a new reduction target</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'offsets' && (
+          <div className="overflow-x-auto">
+            <div className="p-6 border-b border-sage-100 dark:border-ash-800 flex justify-between items-center bg-ivory dark:bg-ash-900/50">
+              <h3 className="text-xl font-display font-bold text-forest-900 dark:text-ivory">Carbon Offset Projects</h3>
+              <button 
+                onClick={() => setIsOffsetModalOpen(true)}
+                className="flex items-center px-4 py-2 bg-forest-900 text-ivory hover:bg-forest-800 rounded-xl text-sm font-medium transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4 mr-1" /> Add Offset
+              </button>
+            </div>
+            <table className="w-full text-left text-sm text-sage-600 dark:text-sage-400">
+              <thead className="bg-sage-50/50 dark:bg-ash-800/20 text-xs font-bold uppercase tracking-widest text-sage-500 border-b border-sage-100 dark:border-ash-800">
+                <tr>
+                  <th className="px-6 py-4">Project Name</th>
+                  <th className="px-6 py-4">Date Purchased</th>
+                  <th className="px-6 py-4 text-right">Credits (tCO2e)</th>
+                  <th className="px-6 py-4">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {offsets.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <ShieldCheck className="w-12 h-12 text-sage-300 mb-4" />
+                        <h4 className="text-lg font-display font-bold text-forest-900 dark:text-ivory mb-1">No offsets recorded</h4>
+                        <p className="text-sage-500 text-sm">Purchase and record offsets to reduce net emissions.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : offsets.map(o => (
+                  <tr key={o.id} className="border-b border-sage-100 dark:border-ash-800 hover:bg-sage-50 dark:hover:bg-ash-800/50 transition-colors">
+                    <td className="px-6 py-4 font-semibold text-forest-900 dark:text-ivory">{o.project_name}</td>
+                    <td className="px-6 py-4">{new Date(o.date_purchased).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-right font-bold text-forest-600 dark:text-forest-400">{o.credits_tonnes.toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <span className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider bg-status-success/10 text-status-success rounded-lg">
+                        {o.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -424,13 +598,50 @@ export default function Environmental() {
               <input type="date" required value={factorForm.effective_from} onChange={e => setFactorForm({...factorForm, effective_from: e.target.value})} className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 outline-none" />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-forest-900 dark:text-ivory mb-1">Data Source</label>
-            <input type="text" required value={factorForm.source} onChange={e => setFactorForm({...factorForm, source: e.target.value})} className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 outline-none" placeholder="e.g., EPA 2024" />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-forest-900 dark:text-ivory mb-1">Scope</label>
+              <select value={factorForm.scope} onChange={e => setFactorForm({...factorForm, scope: e.target.value})} className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 outline-none">
+                <option value="Scope 1">Scope 1</option>
+                <option value="Scope 2">Scope 2</option>
+                <option value="Scope 3">Scope 3</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-forest-900 dark:text-ivory mb-1">Data Source</label>
+              <input type="text" required value={factorForm.source} onChange={e => setFactorForm({...factorForm, source: e.target.value})} className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 outline-none" placeholder="e.g., EPA 2024" />
+            </div>
           </div>
           <div className="pt-4 flex justify-end gap-3">
             <button type="button" onClick={() => setIsFactorModalOpen(false)} className="px-5 py-2.5 text-sage-600 dark:text-sage-400 font-medium hover:bg-sage-100 dark:hover:bg-ash-800 rounded-xl transition-colors">Cancel</button>
             <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 bg-forest-900 text-ivory font-medium rounded-xl hover:bg-forest-800 transition-colors disabled:opacity-50 shadow-sm shadow-forest-900/20">{isSubmitting ? 'Saving...' : 'Add Factor'}</button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={isOffsetModalOpen} onClose={() => setIsOffsetModalOpen(false)} title="Record Carbon Offset">
+        <form onSubmit={handleAddOffset} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-forest-900 dark:text-ivory mb-1">Project Name</label>
+            <input type="text" required value={offsetForm.project_name} onChange={e => setOffsetForm({...offsetForm, project_name: e.target.value})} className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 outline-none" placeholder="e.g., Amazon Reforestation" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-forest-900 dark:text-ivory mb-1">Credits (tCO2e)</label>
+              <input type="number" step="0.01" required value={offsetForm.credits_tonnes} onChange={e => setOffsetForm({...offsetForm, credits_tonnes: e.target.value})} className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 outline-none" placeholder="0.00" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-forest-900 dark:text-ivory mb-1">Date Purchased</label>
+              <input type="date" required value={offsetForm.date_purchased} onChange={e => setOffsetForm({...offsetForm, date_purchased: e.target.value})} className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 outline-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-forest-900 dark:text-ivory mb-1">Certificate URL (Optional)</label>
+            <input type="url" value={offsetForm.certificate_url} onChange={e => setOffsetForm({...offsetForm, certificate_url: e.target.value})} className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 outline-none" placeholder="https://" />
+          </div>
+          <div className="pt-4 flex justify-end gap-3">
+            <button type="button" onClick={() => setIsOffsetModalOpen(false)} className="px-5 py-2.5 text-sage-600 dark:text-sage-400 font-medium hover:bg-sage-100 dark:hover:bg-ash-800 rounded-xl transition-colors">Cancel</button>
+            <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 bg-forest-900 text-ivory font-medium rounded-xl hover:bg-forest-800 transition-colors disabled:opacity-50 shadow-sm shadow-forest-900/20">{isSubmitting ? 'Saving...' : 'Save Offset'}</button>
           </div>
         </form>
       </Modal>

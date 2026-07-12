@@ -14,6 +14,7 @@ export declare class EmissionFactorsController {
         source: string;
         effective_from: Date;
         effective_to: Date | null;
+        scope: string;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     findAll(activity_type?: string): import("@prisma/client").Prisma.PrismaPromise<{
         id: string;
@@ -25,6 +26,7 @@ export declare class EmissionFactorsController {
         source: string;
         effective_from: Date;
         effective_to: Date | null;
+        scope: string;
     }[]>;
     findOne(id: string): import("@prisma/client").Prisma.Prisma__EmissionFactorClient<{
         id: string;
@@ -36,6 +38,7 @@ export declare class EmissionFactorsController {
         source: string;
         effective_from: Date;
         effective_to: Date | null;
+        scope: string;
     } | null, null, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     update(id: string, updateEmissionFactorDto: UpdateEmissionFactorDto): import("@prisma/client").Prisma.Prisma__EmissionFactorClient<{
         id: string;
@@ -47,6 +50,7 @@ export declare class EmissionFactorsController {
         source: string;
         effective_from: Date;
         effective_to: Date | null;
+        scope: string;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     remove(id: string): import("@prisma/client").Prisma.Prisma__EmissionFactorClient<{
         id: string;
@@ -58,5 +62,6 @@ export declare class EmissionFactorsController {
         source: string;
         effective_from: Date;
         effective_to: Date | null;
+        scope: string;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
 }

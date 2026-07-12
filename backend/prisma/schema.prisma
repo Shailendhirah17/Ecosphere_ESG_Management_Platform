@@ -46,6 +46,7 @@ model EmissionFactor {
   effective_from DateTime
   effective_to   DateTime?
   status         String   @default("ACTIVE")
+  scope          String   @default("Scope 3")
 
   carbon_transactions CarbonTransaction[]
 }
@@ -115,9 +116,19 @@ model CarbonTransaction {
   calculation_mode   String   // Auto | Manual
   transaction_date   DateTime
   created_by         String
+  scope              String   @default("Scope 3")
 
   department         Department     @relation(fields: [department_id], references: [id])
   emission_factor    EmissionFactor @relation(fields: [emission_factor_id], references: [id])
+}
+
+model CarbonOffset {
+  id               String   @id @default(uuid())
+  project_name     String
+  credits_tonnes   Float
+  date_purchased   DateTime
+  certificate_url  String?
+  status           String   @default("Active")
 }
 
 model CSRActivity {

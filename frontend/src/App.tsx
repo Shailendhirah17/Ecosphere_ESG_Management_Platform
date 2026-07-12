@@ -17,6 +17,7 @@ import Environmental from './pages/Environmental';
 import Social from './pages/Social';
 import Governance from './pages/Governance';
 import Gamification from './pages/Gamification';
+import Reports from './pages/Reports';
 
 function DashboardContent() {
   const [co2e, setCo2e] = useState(0);
@@ -300,6 +301,12 @@ function App() {
                 Gamification
               </button>
             </li>
+            <li>
+              <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center p-3 rounded-xl transition-all ${activeTab === 'reports' ? 'bg-sage-100 text-sage-900 dark:bg-ash-800 dark:text-ivory' : 'text-sage-900 hover:bg-sage-100 dark:text-sage-100 dark:hover:bg-ash-800/50 group'}`}>
+                <FileText className={`w-5 h-5 mr-3 ${activeTab !== 'reports' && 'opacity-70 group-hover:opacity-100 group-hover:text-sage-500'}`} />
+                Reports
+              </button>
+            </li>
           </ul>
           <div className="absolute bottom-6 left-4 right-4">
             <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center p-3 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-sage-100 text-sage-900 dark:bg-ash-800 dark:text-ivory' : 'text-sage-900 hover:bg-sage-100 dark:text-sage-100 dark:hover:bg-ash-800/50 group'}`}>
@@ -357,6 +364,7 @@ function App() {
           {activeTab === 'social' && <Social />}
           {activeTab === 'governance' && <Governance />}
           {activeTab === 'gamification' && <Gamification />}
+          {activeTab === 'reports' && <Reports />}
           {activeTab === 'settings' && (
             <div className="max-w-7xl mx-auto flex flex-col items-center justify-center h-[400px] border-2 border-dashed border-sage-200 dark:border-ash-800 rounded-3xl">
               <div className="p-4 bg-sage-100 dark:bg-ash-800 rounded-2xl mb-4">

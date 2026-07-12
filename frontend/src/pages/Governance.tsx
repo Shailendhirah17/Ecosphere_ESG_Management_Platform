@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ShieldCheck, Plus, Edit2, Trash2, Calendar, FileText, AlertCircle, Briefcase } from 'lucide-react';
+import { ShieldCheck, Plus, Edit2, Trash2, Calendar, FileText, AlertCircle, Briefcase, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import Modal from '../components/Modal';
 
 export default function Governance() {
@@ -91,6 +93,37 @@ export default function Governance() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleExportPDF = (issue: any) => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text(`Compliance Issue Audit Log: ${issue.id.substring(0,8)}`, 14, 22);
+    
+    doc.setFontSize(11);
+    doc.text(`Severity: ${issue.severity}`, 14, 32);
+    doc.text(`Status: ${issue.status}`, 14, 38);
+    doc.text(`Due Date: ${new Date(issue.due_date).toLocaleDateString()}`, 14, 44);
+    doc.text(`Raised: ${new Date(issue.raised_date).toLocaleDateString()}`, 14, 50);
+    
+    doc.setFontSize(14);
+    doc.text('Description & Evidence Chain', 14, 62);
+    doc.setFontSize(10);
+    const splitText = doc.splitTextToSize(issue.description, 180);
+    doc.text(splitText, 14, 70);
+
+    autoTable(doc, {
+      startY: 90,
+      head: [['Timestamp', 'Action', 'Actor']],
+      body: [
+        [new Date(issue.raised_date).toLocaleString(), 'Issue Logged', issue.owner_employee_id],
+        [new Date(issue.raised_date).toLocaleString(), 'System Validation', 'EcoSphere Core'],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [217, 119, 6] } // amber-600
+    });
+
+    doc.save(`AuditLog_Issue_${issue.id.substring(0,8)}.pdf`);
   };
 
   const getDepartmentName = (id: string) => departments.find(d => d.id === id)?.name || id;
@@ -189,11 +222,12 @@ export default function Governance() {
                   <th className="px-6 py-4">Severity</th>
                   <th className="px-6 py-4">Due Date</th>
                   <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Export</th>
                 </tr>
               </thead>
               <tbody>
                 {issues.length === 0 ? (
-                   <tr><td colSpan={4} className="px-6 py-16 text-center text-sage-400">No issues found.</td></tr>
+                   <tr><td colSpan={5} className="px-6 py-16 text-center text-sage-400">No issues found.</td></tr>
                 ) : issues.map(i => (
                   <tr key={i.id} className="border-b border-sage-100 dark:border-ash-800 hover:bg-sage-50 dark:hover:bg-ash-800/50 transition-colors">
                     <td className="px-6 py-4 font-medium text-forest-900 dark:text-ivory">{i.description}</td>
@@ -207,6 +241,15 @@ export default function Governance() {
                       <span className={`px-3 py-1 text-[10px] uppercase font-bold tracking-wider rounded-lg ${i.status === 'Resolved' ? 'bg-forest-50 text-forest-700' : 'bg-sage-100 text-sage-600'}`}>
                         {i.status}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => handleExportPDF(i)}
+                        className="p-2 text-sage-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                        title="Export Audit Log PDF"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}

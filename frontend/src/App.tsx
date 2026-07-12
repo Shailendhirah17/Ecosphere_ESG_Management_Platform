@@ -22,31 +22,109 @@ function DashboardContent() {
   const [co2e, setCo2e] = useState(0);
   const [openAudits, setOpenAudits] = useState(0);
   const [csrActivities, setCsrActivities] = useState(0);
+  
+  const [esgScore, setEsgScore] = useState(78.4); // Fallback score
+  const [chartData, setChartData] = useState<number[]>([0,0,0,0,0,0]);
+  const [chartLabels, setChartLabels] = useState<string[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   useEffect(() => {
-    // Fetch total CO2e from carbon transactions
-    fetch('http://localhost:3000/carbon-transactions')
-      .then(r => r.json())
-      .then(data => {
-        const total = data.reduce((acc: number, t: any) => acc + t.calculated_co2e, 0);
-        setCo2e(total);
-      })
-      .catch(console.error);
+    const fetchData = async () => {
+      try {
+        const [transactions, audits, activities, scores] = await Promise.all([
+          fetch('http://localhost:3000/carbon-transactions').then(r => r.json()),
+          fetch('http://localhost:3000/audits').then(r => r.json()),
+          fetch('http://localhost:3000/csr-activities').then(r => r.json()),
+          fetch('http://localhost:3000/department-scores').then(r => r.json())
+        ]);
 
-    fetch('http://localhost:3000/audits')
-      .then(r => r.json())
-      .then(data => {
-        const open = data.filter((a: any) => a.status === 'Scheduled').length;
-        setOpenAudits(open);
-      })
-      .catch(console.error);
-      
-    fetch('http://localhost:3000/csr-activities')
-      .then(r => r.json())
-      .then(data => {
-        setCsrActivities(data.length);
-      })
-      .catch(console.error);
+        // 1. Top level stats
+        const totalCo2 = transactions.reduce((acc: number, t: any) => acc + t.calculated_co2e, 0);
+        setCo2e(totalCo2);
+        setOpenAudits(audits.filter((a: any) => a.status === 'Scheduled').length);
+        setCsrActivities(activities.length);
+
+        // 2. ESG Score average
+        if (scores.length > 0) {
+          const avgScore = scores.reduce((acc: number, s: any) => acc + s.total_score, 0) / scores.length;
+          setEsgScore(avgScore);
+        }
+
+        // 3. Chart Data (Last 6 months of emissions)
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const currentMonth = new Date().getMonth();
+        
+        const labels: string[] = [];
+        const rawData: number[] = [0, 0, 0, 0, 0, 0];
+        
+        for (let i = 5; i >= 0; i--) {
+          let mIndex = currentMonth - i;
+          if (mIndex < 0) mIndex += 12;
+          labels.push(months[mIndex]);
+        }
+        setChartLabels(labels);
+
+        transactions.forEach((t: any) => {
+          const date = new Date(t.transaction_date);
+          const mIndex = date.getMonth();
+          const yearDiff = new Date().getFullYear() - date.getFullYear();
+          
+          // Only map if within last 6 months
+          let diffMonths = currentMonth - mIndex + (yearDiff * 12);
+          if (diffMonths >= 0 && diffMonths < 6) {
+            rawData[5 - diffMonths] += t.calculated_co2e;
+          }
+        });
+
+        const maxVal = Math.max(...rawData, 1); // Avoid div by zero
+        const heights = rawData.map(v => (v / maxVal) * 100);
+        setChartData(heights);
+
+        // 4. Recent Activity Feed
+        let combinedFeed: any[] = [];
+        
+        transactions.forEach((t: any) => combinedFeed.push({
+          date: new Date(t.transaction_date),
+          title: 'Emission Logged',
+          desc: `${t.source_type}: ${t.quantity} unit(s)`,
+          icon: Leaf,
+          color: 'text-bio-500 bg-bio-50 dark:bg-bio-900/30'
+        }));
+
+        activities.forEach((a: any) => combinedFeed.push({
+          date: new Date(a.start_date), // Using start date as proxy for created
+          title: 'New CSR Activity',
+          desc: a.title,
+          icon: Users,
+          color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/30'
+        }));
+
+        audits.forEach((a: any) => combinedFeed.push({
+          date: new Date(a.scheduled_date),
+          title: 'Audit Scheduled',
+          desc: a.audit_type,
+          icon: ShieldCheck,
+          color: 'text-forest-500 bg-forest-50 dark:bg-forest-900/30'
+        }));
+
+        combinedFeed.sort((a, b) => b.date.getTime() - a.date.getTime());
+        
+        // Format relative time (naive)
+        const now = new Date();
+        const formattedFeed = combinedFeed.slice(0, 5).map(item => {
+          const diffDays = Math.floor((now.getTime() - item.date.getTime()) / (1000 * 3600 * 24));
+          const timeStr = diffDays === 0 ? 'Today' : diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+          return { ...item, time: timeStr };
+        });
+
+        setRecentActivity(formattedFeed);
+
+      } catch (err) {
+        console.error('Dashboard data fetch failed', err);
+      }
+    };
+
+    fetchData();
   }, []);
 
   return (
@@ -74,7 +152,7 @@ function DashboardContent() {
             <p className="text-sm font-semibold text-sage-900 dark:text-sage-500 uppercase tracking-wider">Total ESG Score</p>
           </div>
           <div className="mt-2 mb-4">
-             <GeoRing score={78.4} />
+             <GeoRing score={Number(esgScore.toFixed(1))} />
           </div>
           <div className="flex items-center justify-center text-sm">
             <span className="font-semibold text-forest-500">+2.1%</span>
@@ -114,47 +192,44 @@ function DashboardContent() {
 
       {/* Main Dashboard Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Chart Placeholder */}
+        {/* Chart */}
         <div className="lg:col-span-2 bg-white dark:bg-ash-900 rounded-3xl p-6 border border-sage-100 dark:border-ash-800 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-display font-bold text-forest-900 dark:text-ivory">Emissions Trend</h2>
             <select className="bg-sage-50 dark:bg-ash-800 border-none text-sm font-medium rounded-xl focus:ring-forest-500 py-2 px-4 cursor-pointer text-sage-900 dark:text-sage-100">
               <option>Last 6 Months</option>
-              <option>This Year</option>
             </select>
           </div>
           <div className="h-64 flex items-end justify-between gap-2 px-4">
-            {[40, 70, 45, 90, 65, 30].map((h, i) => (
+            {chartData.map((h, i) => (
               <div key={i} className="w-full relative group flex justify-center">
                 <div className="absolute inset-0 bg-gradient-to-t from-forest-500/10 to-transparent rounded-t-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div 
-                  style={{ height: `${h}%` }} 
+                  style={{ height: `${Math.max(h, 5)}%` }} // Ensure at least 5% height for visibility
                   className="w-full max-w-[48px] bg-gradient-to-t from-forest-900 to-forest-500 rounded-t-2xl shadow-sm relative z-10 group-hover:scale-y-105 origin-bottom transition-transform duration-300"
                 ></div>
               </div>
             ))}
           </div>
           <div className="flex justify-between mt-6 text-xs font-bold text-sage-400 uppercase tracking-widest px-6">
-            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+            {chartLabels.map((lbl, i) => <span key={i}>{lbl}</span>)}
           </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white dark:bg-ash-900 rounded-3xl p-6 border border-sage-100 dark:border-ash-800 shadow-sm">
+        <div className="bg-white dark:bg-ash-900 rounded-3xl p-6 border border-sage-100 dark:border-ash-800 shadow-sm overflow-y-auto max-h-[380px]">
           <h2 className="text-xl font-display font-bold text-forest-900 dark:text-ivory mb-6">Recent Activity</h2>
           <div className="space-y-6">
-            {[
-              { title: 'New policy acknowledged', desc: 'Code of Conduct v2', time: '2 hours ago', icon: ShieldCheck, color: 'text-forest-500 bg-forest-50 dark:bg-forest-900/30' },
-              { title: 'Challenge Completed', desc: 'Bike to Work Week', time: '5 hours ago', icon: Award, color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/30' },
-              { title: 'Carbon data updated', desc: 'Q2 Fleet Emissions', time: '1 day ago', icon: Leaf, color: 'text-bio-500 bg-bio-50 dark:bg-bio-900/30' },
-            ].map((act, i) => (
+            {recentActivity.length === 0 ? (
+              <p className="text-sage-500 text-sm text-center py-8">No recent activity found.</p>
+            ) : recentActivity.map((act, i) => (
               <div key={i} className="flex gap-4 group cursor-pointer hover:bg-sage-50 dark:hover:bg-ash-800/50 p-2 -mx-2 rounded-xl transition-colors">
                 <div className={`p-3 rounded-2xl h-fit ${act.color} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
                   <act.icon className="w-5 h-5" />
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-forest-900 dark:text-ivory">{act.title}</h4>
-                  <p className="text-xs text-sage-500 mt-1">{act.desc}</p>
+                  <p className="text-xs text-sage-500 mt-1 line-clamp-1">{act.desc}</p>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-sage-400 mt-2 block">{act.time}</span>
                 </div>
               </div>

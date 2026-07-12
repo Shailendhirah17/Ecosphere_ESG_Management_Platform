@@ -1,15 +1,51 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, Plus, Edit2, Trash2 } from 'lucide-react';
+import Modal from '../components/Modal';
 
 export default function Departments() {
   const [departments, setDepartments] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({ name: '', code: '', head_employee_id: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
+  const fetchDepartments = () => {
     fetch('http://localhost:3000/departments')
       .then(res => res.json())
       .then(setDepartments)
       .catch(console.error);
+  };
+
+  useEffect(() => {
+    fetchDepartments();
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('http://localhost:3000/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          employee_count: 0,
+          status: 'ACTIVE'
+        })
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        setFormData({ name: '', code: '', head_employee_id: '' });
+        fetchDepartments();
+      } else {
+        alert('Failed to create department');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
@@ -31,7 +67,10 @@ export default function Departments() {
         <div className="overflow-x-auto">
           <div className="p-6 border-b border-sage-100 dark:border-ash-800 flex justify-between items-center bg-ivory dark:bg-ash-900/50">
             <h3 className="text-xl font-display font-bold text-forest-900 dark:text-ivory">Departments</h3>
-            <button className="flex items-center px-4 py-2 bg-forest-900 text-ivory hover:bg-forest-800 rounded-xl text-sm font-medium transition-colors shadow-sm">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center px-4 py-2 bg-forest-900 text-ivory hover:bg-forest-800 rounded-xl text-sm font-medium transition-colors shadow-sm"
+            >
               <Plus className="w-4 h-4 mr-1" /> Add Department
             </button>
           </div>
@@ -76,6 +115,59 @@ export default function Departments() {
           </table>
         </div>
       </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Department">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-forest-900 dark:text-ivory mb-1">Department Name</label>
+            <input 
+              type="text" 
+              required
+              value={formData.name}
+              onChange={e => setFormData({...formData, name: e.target.value})}
+              className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 focus:border-forest-500 dark:text-ivory outline-none"
+              placeholder="e.g., Finance"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-forest-900 dark:text-ivory mb-1">Department Code</label>
+            <input 
+              type="text" 
+              required
+              value={formData.code}
+              onChange={e => setFormData({...formData, code: e.target.value})}
+              className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 focus:border-forest-500 dark:text-ivory outline-none"
+              placeholder="e.g., FIN-01"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-forest-900 dark:text-ivory mb-1">Head Employee ID (Optional)</label>
+            <input 
+              type="text" 
+              value={formData.head_employee_id}
+              onChange={e => setFormData({...formData, head_employee_id: e.target.value})}
+              className="w-full p-3 bg-sage-50 dark:bg-ash-950 border border-sage-200 dark:border-ash-800 rounded-xl focus:ring-forest-500 focus:border-forest-500 dark:text-ivory outline-none"
+              placeholder="e.g., emp-105"
+            />
+          </div>
+          <div className="pt-4 flex justify-end gap-3">
+            <button 
+              type="button" 
+              onClick={() => setIsModalOpen(false)}
+              className="px-5 py-2.5 text-sage-600 dark:text-sage-400 font-medium hover:bg-sage-100 dark:hover:bg-ash-800 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="px-5 py-2.5 bg-forest-900 text-ivory font-medium rounded-xl hover:bg-forest-800 transition-colors disabled:opacity-50 shadow-sm shadow-forest-900/20"
+            >
+              {isSubmitting ? 'Saving...' : 'Save Department'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

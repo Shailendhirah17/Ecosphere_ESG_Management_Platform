@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Department {
+  id                   String       @id @default(uuid())
+  name                 String
+  code                 String       @unique
+  head_employee_id     String?
+  parent_department_id String?
+  employee_count       Int          @default(0)
+  status               String       @default("ACTIVE")
+  
+  parent               Department?  @relation("DepartmentHierarchy", fields: [parent_department_id], references: [id])
+  children             Department[] @relation("DepartmentHierarchy")
+  
+  carbon_transactions  CarbonTransaction[]
+  csr_activities       CSRActivity[]
+  environmental_goals  EnvironmentalGoal[]
+  audits               Audit[]
+  scores               DepartmentScore[]
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  type        String   // CSR_ACTIVITY | CHALLENGE
+  status      String   @default("ACTIVE")
+
+  csr_activities CSRActivity[]
+  challenges     Challenge[]
+}
+
+model EmissionFactor {
+  id             String   @id @default(uuid())
+  name           String
+  activity_type  String
+  unit           String
+  co2e_per_unit  Float
+  source         String
+  effective_from DateTime
+  effective_to   DateTime?
+  status         String   @default("ACTIVE")
+
+  carbon_transactions CarbonTransaction[]
+}
+
+model ProductESGProfile {
+  id                    String   @id @default(uuid())
+  product_id            String   @unique
+  material_composition  Json
+  embedded_carbon_value Float
+  recyclability_flag    Boolean  @default(false)
+  notes                 String?
+}
+
+model EnvironmentalGoal {
+  id             String      @id @default(uuid())
+  department_id  String?
+  metric_type    String
+  target_value   Float
+  unit           String
+  target_date    DateTime
+  baseline_value Float
+  status         String      @default("ACTIVE")
+
+  department     Department? @relation(fields: [department_id], references: [id])
+}
+
+model ESGPolicy {
+  id             String   @id @default(uuid())
+  title          String
+  category       String
+  version        String
+  document_url   String
+  effective_date DateTime
+  mandatory_flag Boolean  @default(true)
+  status         String   @default("ACTIVE")
+
+  acknowledgements PolicyAcknowledgement[]
+}
+
+model Badge {
+  id                String   @id @default(uuid())
+  name              String
+  description       String
+  icon              String
+  unlock_rule_type  String   // XP_THRESHOLD | CHALLENGE_COUNT | CSR_COUNT | CUSTOM
+  unlock_rule_value Int
+  status            String   @default("ACTIVE")
+}
+
+model Reward {
+  id              String   @id @default(uuid())
+  name            String
+  description     String
+  points_required Int
+  stock           Int
+  status          String   @default("ACTIVE")
+}
+
+model CarbonTransaction {
+  id                 String   @id @default(uuid())
+  department_id      String
+  source_type        String   // Purchase | Manufacturing | Expense | Fleet
+  source_record_id   String
+  emission_factor_id String
+  quantity           Float
+  calculated_co2e    Float
+  calculation_mode   String   // Auto | Manual
+  transaction_date   DateTime
+  created_by         String
+
+  department         Department     @relation(fields: [department_id], references: [id])
+  emission_factor    EmissionFactor @relation(fields: [emission_factor_id], references: [id])
+}
+
+model CSRActivity {
+  id                         String   @id @default(uuid())
+  title                      String
+  category_id                String
+  description                String
+  department_id              String
+  location                   String
+  start_date                 DateTime
+  end_date                   DateTime
+  capacity                   Int
+  evidence_required_override Boolean?
+  status                     String   @default("ACTIVE")
+
+  category                   Category @relation(fields: [category_id], references: [id])
+  department                 Department @relation(fields: [department_id], references: [id])
+  participations             EmployeeParticipation[]
+}
+
+model EmployeeParticipation {
+  id              String   @id @default(uuid())
+  employee_id     String
+  activity_id     String
+  proof_url       String?
+  approval_status String   @default("Pending") // Pending | Approved | Rejected
+  points_earned   Int      @default(0)
+  completion_date DateTime?
+  approved_by     String?
+
+  activity        CSRActivity @relation(fields: [activity_id], references: [id])
+}
+
+model Challenge {
+  id                String   @id @default(uuid())
+  title             String
+  category_id       String
+  description       String
+  xp_value          Int
+  difficulty        String   // Easy | Medium | Hard
+  evidence_required Boolean  @default(true)
+  deadline          DateTime
+  status            String   @default("Draft") // Draft | Active | Under Review | Completed | Archived
+
+  category          Category @relation(fields: [category_id], references: [id])
+  participations    ChallengeParticipation[]
+}
+
+model ChallengeParticipation {
+  id              String   @id @default(uuid())
+  challenge_id    String
+  employee_id     String
+  progress_pct    Int      @default(0)
+  proof_url       String?
+  approval_status String   @default("Pending")
+  xp_awarded      Int      @default(0)
+  submitted_date  DateTime?
+
+  challenge       Challenge @relation(fields: [challenge_id], references: [id])
+}
+
+model PolicyAcknowledgement {
+  id                String   @id @default(uuid())
+  policy_id         String
+  employee_id       String
+  acknowledged_date DateTime?
+  reminder_count    Int      @default(0)
+  status            String   @default("Pending") // Pending | Acknowledged
+
+  policy            ESGPolicy @relation(fields: [policy_id], references: [id])
+}
+
+model Audit {
+  id               String   @id @default(uuid())
+  department_id    String
+  audit_type       String
+  scheduled_date   DateTime
+  completed_date   DateTime?
+  auditor          String
+  findings_summary String?
+  status           String   @default("Scheduled")
+
+  department       Department @relation(fields: [department_id], references: [id])
+  compliance_issues ComplianceIssue[]
+}
+
+model ComplianceIssue {
+  id                String   @id @default(uuid())
+  audit_id          String?
+  severity          String   // Low | Medium | High | Critical
+  description       String
+  owner_employee_id String
+  due_date          DateTime
+  status            String   @default("Open") // Open | In Progress | Resolved | Overdue
+  raised_date       DateTime @default(now())
+
+  audit             Audit?   @relation(fields: [audit_id], references: [id])
+}
+
+model DepartmentScore {
+  id                  String   @id @default(uuid())
+  department_id       String
+  period              String
+  environmental_score Float
+  social_score        Float
+  governance_score    Float
+  total_score         Float
+  calculated_at       DateTime @default(now())
+
+  department          Department @relation(fields: [department_id], references: [id])
+}
+
+model EmployeeWallet {
+  employee_id     String   @id
+  balance         Int      @default(0)
+  lifetime_earned Int      @default(0)
+}

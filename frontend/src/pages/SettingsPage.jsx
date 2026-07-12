@@ -1,193 +1,209 @@
-import { useState, useEffect } from 'react';
-import { api } from '../api/endpoints';
-import { useAuth } from '../context/AuthContext';
+import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { 
+  Building, LayoutGrid, Sliders, Bell, Plus, Save
+} from 'lucide-react';
+import { PageHeader, DataTable, Input, Button, Modal, Card } from '../components/common';
+import { useToast } from '../context/ToastContext';
 
-export default function SettingsPage() {
-  const { user } = useAuth();
-  const [settings, setSettings] = useState({
-    env_weight: 40,
-    social_weight: 30,
-    gov_weight: 30,
-    auto_emission_calc: true,
-    evidence_requirement: true,
-    badge_auto_award: true,
-    notification_enabled: true
-  });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+// --- Dummy Data ---
+const departments = [
+  { id: 1, name: 'Manufacturing', manager: 'John Doe', count: 450, location: 'New York', status: 'Active' },
+  { id: 2, name: 'IT', manager: 'Jane Smith', count: 120, location: 'San Francisco', status: 'Active' },
+  { id: 3, name: 'Logistics', manager: 'Alice Johnson', count: 300, location: 'Chicago', status: 'Active' },
+  { id: 4, name: 'HQ', manager: 'Bob Wilson', count: 50, location: 'London', status: 'Inactive' },
+];
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
+const categories = [
+  { id: 1, type: 'Environmental', name: 'Energy Consumption', status: 'Active' },
+  { id: 2, type: 'Environmental', name: 'Waste Management', status: 'Active' },
+  { id: 3, type: 'Social', name: 'Community Engagement', status: 'Active' },
+  { id: 4, type: 'Governance', name: 'Ethical Conduct', status: 'Active' },
+];
 
-  const fetchSettings = async () => {
-    try {
-      const response = await api.settings.getSettings();
-      if (response.data?.data) {
-        setSettings(response.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch settings:', error);
-    }
-  };
+function Departments() {
+  const { showToast } = useToast();
+  const [isModalOpen, setModalOpen] = useState(false);
 
-  const handleWeightChange = (e) => {
-    const { name, value } = e.target;
-    setSettings(prev => ({
-      ...prev,
-      [name]: parseInt(value)
-    }));
-  };
-
-  const handleToggleChange = (field) => {
-    setSettings(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    // Validate weights
-    const total = settings.env_weight + settings.social_weight + settings.gov_weight;
-    if (total !== 100) {
-      setMessage(`Error: Weights must sum to 100. Current: ${total}`);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      await api.settings.updateSettings(settings);
-      setMessage('Settings updated successfully!');
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error) {
-      setMessage('Error updating settings');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!user || user.role !== 'ESG Admin') {
-    return <div className="p-8 text-center text-red-600">Access Denied: Admin Only</div>;
-  }
+  const columns = [
+    { header: 'Department Name', accessor: 'name', className: 'font-medium text-gray-900' },
+    { header: 'Manager', accessor: 'manager' },
+    { header: 'Employee Count', accessor: 'count' },
+    { header: 'Location', accessor: 'location' },
+    { 
+      header: 'Status', 
+      accessor: 'status',
+      render: (row) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+          row.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+        }`}>
+          {row.status}
+        </span>
+      )
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">ESG Settings</h1>
+    <div>
+      <PageHeader 
+        title="Departments" 
+        breadcrumbs={[{ label: 'Settings' }, { label: 'Departments' }]}
+        actions={[{ label: 'Add Department', icon: Plus, variant: 'primary', onClick: () => setModalOpen(true) }]}
+      />
+      <DataTable columns={columns} data={departments} searchPlaceholder="Search departments..." />
+      
+      <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title="Add Department" footerActions={[
+        { label: 'Cancel', onClick: () => setModalOpen(false) },
+        { label: 'Save', variant: 'primary', onClick: () => { showToast('Saved!'); setModalOpen(false); } }
+      ]}>
+        <div className="space-y-4">
+          <Input label="Department Name" />
+          <Input label="Manager Name" />
+          <Input label="Location" />
+        </div>
+      </Modal>
+    </div>
+  );
+}
 
-        {message && (
-          <div className={`mb-4 p-4 rounded ${message.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-            {message}
-          </div>
-        )}
+function Categories() {
+  const { showToast } = useToast();
+  const [isModalOpen, setModalOpen] = useState(false);
 
-        <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6 space-y-6">
-          {/* Scoring Weights */}
+  const columns = [
+    { header: 'Category Name', accessor: 'name', className: 'font-medium text-gray-900' },
+    { header: 'Type', accessor: 'type' },
+    { 
+      header: 'Status', 
+      accessor: 'status',
+      render: (row) => (
+        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+          {row.status}
+        </span>
+      )
+    },
+  ];
+
+  return (
+    <div>
+      <PageHeader 
+        title="Categories" 
+        breadcrumbs={[{ label: 'Settings' }, { label: 'Categories' }]}
+        actions={[{ label: 'Add Category', icon: Plus, variant: 'primary', onClick: () => setModalOpen(true) }]}
+      />
+      <DataTable columns={columns} data={categories} searchPlaceholder="Search categories..." />
+      
+      <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title="Add Category" footerActions={[
+        { label: 'Cancel', onClick: () => setModalOpen(false) },
+        { label: 'Save', variant: 'primary', onClick: () => { showToast('Saved!'); setModalOpen(false); } }
+      ]}>
+        <div className="space-y-4">
+          <Input label="Category Name" />
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">ESG Scoring Weights</h2>
-            <p className="text-sm text-gray-600 mb-4">Total must equal 100%</p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Environmental (%)</label>
-                <input
-                  type="number"
-                  name="env_weight"
-                  value={settings.env_weight}
-                  onChange={handleWeightChange}
-                  min="0"
-                  max="100"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div
-                    className="bg-green-600 h-2 rounded-full transition-all"
-                    style={{ width: `${settings.env_weight}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Social (%)</label>
-                <input
-                  type="number"
-                  name="social_weight"
-                  value={settings.social_weight}
-                  onChange={handleWeightChange}
-                  min="0"
-                  max="100"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all"
-                    style={{ width: `${settings.social_weight}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Governance (%)</label>
-                <input
-                  type="number"
-                  name="gov_weight"
-                  value={settings.gov_weight}
-                  onChange={handleWeightChange}
-                  min="0"
-                  max="100"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div
-                    className="bg-purple-600 h-2 rounded-full transition-all"
-                    style={{ width: `${settings.gov_weight}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="text-right text-sm font-semibold text-gray-700 mt-4">
-                Total: {settings.env_weight + settings.social_weight + settings.gov_weight}%
-              </div>
-            </div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <select className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm py-2 px-3 border">
+              <option>Environmental</option>
+              <option>Social</option>
+              <option>Governance</option>
+            </select>
           </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
 
-          {/* Feature Toggles */}
-          <div className="border-t pt-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Feature Toggles</h2>
-
-            <div className="space-y-3">
-              {[
-                { key: 'auto_emission_calc', label: 'Auto Emission Calculation' },
-                { key: 'evidence_requirement', label: 'Require Evidence for CSR' },
-                { key: 'badge_auto_award', label: 'Auto Award Badges' },
-                { key: 'notification_enabled', label: 'Enable Notifications' }
-              ].map(toggle => (
-                <label key={toggle.key} className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings[toggle.key]}
-                    onChange={() => handleToggleChange(toggle.key)}
-                    className="w-4 h-4 rounded"
-                  />
-                  <span className="ml-2 text-gray-700">{toggle.label}</span>
-                </label>
-              ))}
-            </div>
+function ESGConfig() {
+  const { showToast } = useToast();
+  
+  return (
+    <div className="max-w-3xl">
+      <PageHeader title="ESG Configuration" breadcrumbs={[{ label: 'Settings' }, { label: 'ESG Config' }]} />
+      
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-6">
+        <h3 className="text-lg font-bold border-b pb-2">General Settings</h3>
+        <Input label="Company Name" defaultValue="EcoCorp Ltd" />
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Reporting Framework</label>
+          <select className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm py-2 px-3 border">
+            <option>GRI (Global Reporting Initiative)</option>
+            <option>SASB</option>
+            <option>BRSR</option>
+          </select>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Financial Year Start</label>
+            <select className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm py-2 px-3 border">
+              <option>January 1st</option>
+              <option>April 1st</option>
+            </select>
           </div>
+          <Input label="Currency" defaultValue="USD ($)" />
+        </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-          >
-            {loading ? 'Saving...' : 'Save Settings'}
-          </button>
-        </form>
+        <h3 className="text-lg font-bold border-b pb-2 pt-4">Environmental Settings</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Emission Unit" defaultValue="tCO2e" />
+          <Input label="Carbon Formula" defaultValue="Activity Data × Emission Factor" disabled />
+        </div>
+
+        <div className="pt-4 flex justify-end">
+          <Button icon={Save} onClick={() => showToast('Configuration saved!')}>Save Configuration</Button>
+        </div>
       </div>
     </div>
   );
+}
+
+function NotificationSettings() {
+  const { showToast } = useToast();
+  
+  const notifs = [
+    { label: 'Email Notifications', desc: 'Receive daily digests via email.' },
+    { label: 'Push Notifications', desc: 'Receive instant alerts in browser.' },
+    { label: 'Policy Reminders', desc: 'Remind users to sign pending policies.' },
+    { label: 'Audit Alerts', desc: 'Alert admins of upcoming scheduled audits.' },
+    { label: 'Weekly Summary', desc: 'Automated weekly ESG performance report.' }
+  ];
+
+  return (
+    <div className="max-w-3xl">
+      <PageHeader title="Notification Settings" breadcrumbs={[{ label: 'Settings' }, { label: 'Notifications' }]} />
+      
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <ul className="divide-y divide-gray-200">
+          {notifs.map((n, idx) => (
+            <li key={idx} className="p-4 flex items-center justify-between hover:bg-gray-50">
+              <div>
+                <p className="font-medium text-gray-900">{n.label}</p>
+                <p className="text-sm text-gray-500">{n.desc}</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked={idx % 2 === 0} />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+              </label>
+            </li>
+          ))}
+        </ul>
+        <div className="p-4 border-t bg-gray-50 flex justify-end">
+          <Button icon={Save} onClick={() => showToast('Settings saved!')}>Save Preferences</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function SettingsPage() {
+  const location = useLocation();
+  const path = location.pathname;
+
+  if (path.includes('departments')) return <div className="p-8"><Departments /></div>;
+  if (path.includes('categories')) return <div className="p-8"><Categories /></div>;
+  if (path.includes('esg-configuration')) return <div className="p-8"><ESGConfig /></div>;
+  if (path.includes('notification-settings')) return <div className="p-8"><NotificationSettings /></div>;
+
+  return <div className="p-8"><ESGConfig /></div>;
 }

@@ -1,104 +1,93 @@
-import React, { useState, useEffect } from 'react';
-import { employeeAPI } from '../api/endpoints';
-import { Medal, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
+import { Medal, Trophy, Star } from 'lucide-react';
+import { PageHeader, Card, Button } from '../components/common';
+
+const topEmployees = [
+  { name: 'John Smith', points: 4500, dept: 'Manufacturing' },
+  { name: 'Jane Doe', points: 4200, dept: 'IT' },
+  { name: 'Alice Johnson', points: 3800, dept: 'HQ' },
+  { name: 'Bob Wilson', points: 3500, dept: 'Logistics' },
+  { name: 'Sarah Brown', points: 3100, dept: 'HR' },
+];
+
+const topDepartments = [
+  { name: 'Manufacturing', points: 12500 },
+  { name: 'IT', points: 9800 },
+  { name: 'HQ', points: 8500 },
+  { name: 'Logistics', points: 6400 },
+  { name: 'HR', points: 4200 },
+];
 
 export default function LeaderboardPage() {
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        const response = await employeeAPI.getLeaderboard();
-        setLeaderboard(response.data.data);
-      } catch (error) {
-        console.error('Error fetching leaderboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeaderboard();
-  }, []);
-
-  const getMedalIcon = (rank) => {
-    switch (rank) {
-      case 1:
-        return '🥇';
-      case 2:
-        return '🥈';
-      case 3:
-        return '🥉';
-      default:
-        return null;
-    }
-  };
-
-  if (loading) {
-    return <div className="text-center py-8">Loading leaderboard...</div>;
-  }
+  const [activeTab, setActiveTab] = useState('Monthly');
+  const tabs = ['Weekly', 'Monthly', 'Yearly'];
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-8 rounded-lg">
-        <h1 className="text-3xl font-bold mb-2">Leaderboard</h1>
-        <p className="text-yellow-100">Top performers in the EcoSphere community</p>
+    <div className="p-8">
+      <PageHeader 
+        title="Leaderboard" 
+        breadcrumbs={[{ label: 'Gamification' }, { label: 'Leaderboard' }]} 
+      />
+
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit mb-8">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-6 py-2.5 text-sm font-medium rounded-md transition-colors ${
+              activeTab === tab
+                ? 'bg-white text-green-700 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
-      {/* Leaderboard Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-100 border-b">
-              <tr>
-                <th className="px-6 py-4 text-left font-semibold text-gray-800">Rank</th>
-                <th className="px-6 py-4 text-left font-semibold text-gray-800">Name</th>
-                <th className="px-6 py-4 text-left font-semibold text-gray-800">Email</th>
-                <th className="px-6 py-4 text-right font-semibold text-gray-800">XP</th>
-                <th className="px-6 py-4 text-right font-semibold text-gray-800">Points</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {leaderboard.map((employee, index) => (
-                <tr key={employee.id} className={index < 3 ? 'bg-yellow-50' : 'hover:bg-gray-50'}>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{getMedalIcon(index + 1)}</span>
-                      <span className="font-semibold text-gray-800">#{index + 1}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-green-400 flex items-center justify-center text-white font-bold">
-                        {employee.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="font-medium text-gray-800">{employee.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{employee.email}</td>
-                  <td className="px-6 py-4 text-right">
-                    <span className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-semibold">
-                      ⚡ {employee.xp_balance}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-semibold">
-                      🎯 {employee.points_balance}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Top Employees Chart */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-2 mb-6">
+            <Trophy className="w-5 h-5 text-yellow-500" />
+            <h3 className="text-lg font-bold text-gray-900">Top Employees</h3>
+          </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topEmployees} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={100} />
+                <Tooltip cursor={{fill: 'transparent'}} />
+                <Bar dataKey="points" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Top Departments Chart */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-2 mb-6">
+            <Medal className="w-5 h-5 text-blue-500" />
+            <h3 className="text-lg font-bold text-gray-900">Top Departments</h3>
+          </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topDepartments} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={100} />
+                <Tooltip cursor={{fill: 'transparent'}} />
+                <Bar dataKey="points" fill="#10b981" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
-
-      {leaderboard.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <Medal className="mx-auto text-gray-400 mb-4" size={48} />
-          <p className="text-gray-600 text-lg">No employees yet</p>
-        </div>
-      )}
     </div>
   );
 }

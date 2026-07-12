@@ -1,196 +1,297 @@
-import { useState, useEffect } from 'react';
-import { api } from '../api/endpoints';
+import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+} from 'recharts';
+import { 
+  Leaf, Settings, Package, Target, Download, Upload, Plus
+} from 'lucide-react';
+import { Card, PageHeader, DataTable, Button, Modal, Input } from '../components/common';
+import { useToast } from '../context/ToastContext';
 
-export default function EmissionsPage() {
-  const [emissions, setEmissions] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [selectedDept, setSelectedDept] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    category: '',
-    quantity: '',
-    unit: 'kg',
-    description: ''
-  });
+// --- Dummy Data ---
+const emissionFactors = [
+  { id: 1, name: 'Grid Electricity', category: 'Energy', unit: 'kWh', value: '0.453', country: 'US', date: '2025-01-01', status: 'Active' },
+  { id: 2, name: 'Natural Gas', category: 'Fuel', unit: 'mmBtu', value: '53.06', country: 'Global', date: '2025-01-01', status: 'Active' },
+  { id: 3, name: 'Diesel', category: 'Transport', unit: 'Gallon', value: '10.21', country: 'UK', date: '2025-01-01', status: 'Active' },
+  { id: 4, name: 'Commercial Flight', category: 'Travel', unit: 'Passenger Mile', value: '0.133', country: 'Global', date: '2024-06-01', status: 'Archived' },
+];
 
-  useEffect(() => {
-    fetchDepartments();
-  }, []);
+const productProfiles = [
+  { id: 'P001', name: 'EcoWidget Pro', sku: 'EW-PRO-01', category: 'Electronics', score: 85, carbon: '12.5 kg', water: '45 L', renewable: '60%' },
+  { id: 'P002', name: 'Green Packaging Box', sku: 'GP-BOX-10', category: 'Packaging', score: 92, carbon: '1.2 kg', water: '5 L', renewable: '100%' },
+  { id: 'P003', name: 'Smart Thermostat', sku: 'ST-01', category: 'Electronics', score: 78, carbon: '22.0 kg', water: '120 L', renewable: '35%' },
+];
 
-  useEffect(() => {
-    if (selectedDept) {
-      fetchEmissions();
-    }
-  }, [selectedDept]);
+const transactions = [
+  { id: 'TX-9021', vendor: 'ClimateCare', quantity: 500, price: '$12.50', date: '2026-03-15', status: 'Completed' },
+  { id: 'TX-9022', vendor: 'TerraPass', quantity: 1000, price: '$11.00', date: '2026-04-02', status: 'Pending' },
+  { id: 'TX-9023', vendor: 'SouthPole', quantity: 250, price: '$14.20', date: '2026-05-20', status: 'Completed' },
+];
 
-  const fetchDepartments = async () => {
-    try {
-      const response = await api.departments.getAll();
-      setDepartments(response.data?.data || []);
-      if (response.data?.data?.length > 0) {
-        setSelectedDept(response.data.data[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to fetch departments:', error);
-    }
-  };
+const goals = [
+  { id: 1, name: 'Reduce Scope 2 Emissions', department: 'Facilities', target: '20%', current: '12%', progress: 60, deadline: '2026-12-31', owner: 'Jane Doe', status: 'On Track' },
+  { id: 2, name: 'Zero Waste to Landfill', department: 'Manufacturing', target: '100%', current: '85%', progress: 85, deadline: '2026-09-30', owner: 'John Smith', status: 'On Track' },
+  { id: 3, name: 'Switch to Renewable Energy', department: 'HQ', target: '100%', current: '40%', progress: 40, deadline: '2026-12-31', owner: 'Alice Johnson', status: 'Delayed' },
+];
 
-  const fetchEmissions = async () => {
-    try {
-      setLoading(true);
-      const response = await api.environmental.getCarbonTransactions(selectedDept);
-      setEmissions(response.data?.data || []);
-    } catch (error) {
-      console.error('Failed to fetch emissions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+const transactionData = [
+  { month: 'Jan', purchased: 1000, retired: 400 },
+  { month: 'Feb', purchased: 0, retired: 200 },
+  { month: 'Mar', purchased: 500, retired: 300 },
+  { month: 'Apr', purchased: 1000, retired: 500 },
+  { month: 'May', purchased: 250, retired: 250 },
+];
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await api.environmental.createCarbonTransaction({
-        department_id: selectedDept,
-        ...formData
-      });
-      setFormData({ category: '', quantity: '', unit: 'kg', description: '' });
-      fetchEmissions();
-    } catch (error) {
-      console.error('Failed to create transaction:', error);
-    }
-  };
+// --- Sub-components for each section ---
 
-  const totalEmissions = emissions.reduce((sum, e) => sum + (e.co2_equivalent || 0), 0);
+function EmissionFactors() {
+  const { showToast } = useToast();
+  const [isModalOpen, setModalOpen] = useState(false);
+
+  const columns = [
+    { header: 'Factor Name', accessor: 'name', className: 'font-medium text-gray-900' },
+    { header: 'Category', accessor: 'category' },
+    { header: 'Unit', accessor: 'unit' },
+    { header: 'CO₂e Value', accessor: 'value' },
+    { header: 'Country', accessor: 'country' },
+    { header: 'Effective Date', accessor: 'date' },
+    { 
+      header: 'Status', 
+      accessor: 'status',
+      render: (row) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+          row.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+        }`}>
+          {row.status}
+        </span>
+      )
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Carbon Emissions Tracking</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Form */}
-          <div className="lg:col-span-1">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">Record Emission</h2>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
-                <select
-                  value={selectedDept}
-                  onChange={(e) => setSelectedDept(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                >
-                  {departments.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    required
-                  >
-                    <option value="">Select category</option>
-                    <option value="energy">Energy</option>
-                    <option value="travel">Travel</option>
-                    <option value="waste">Waste</option>
-                    <option value="water">Water</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-                  <input
-                    type="number"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
-                  <select
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  >
-                    <option value="kg">kg</option>
-                    <option value="ton">ton</option>
-                    <option value="liter">liter</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    rows="3"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700"
-                >
-                  Record Emission
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* Emissions List */}
-          <div className="lg:col-span-2">
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold">Recent Emissions</h2>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Total CO2 Equivalent</p>
-                  <p className="text-2xl font-bold text-green-600">{totalEmissions.toFixed(2)} kg</p>
-                </div>
-              </div>
-
-              {loading ? (
-                <p className="text-center text-gray-500">Loading...</p>
-              ) : emissions.length === 0 ? (
-                <p className="text-center text-gray-500">No emissions recorded yet</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 px-2">Date</th>
-                        <th className="text-left py-2 px-2">Category</th>
-                        <th className="text-right py-2 px-2">Quantity</th>
-                        <th className="text-right py-2 px-2">CO2 (kg)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {emissions.map(e => (
-                        <tr key={e.id} className="border-b hover:bg-gray-50">
-                          <td className="py-2 px-2">{new Date(e.date).toLocaleDateString()}</td>
-                          <td className="py-2 px-2">{e.category}</td>
-                          <td className="text-right py-2 px-2">{e.quantity} {e.unit}</td>
-                          <td className="text-right py-2 px-2 font-semibold">{e.co2_equivalent.toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+    <div>
+      <PageHeader 
+        title="Emission Factors" 
+        breadcrumbs={[{ label: 'Environmental' }, { label: 'Emission Factors' }]}
+        actions={[
+          { label: 'Import', icon: Upload, variant: 'secondary', onClick: () => alert('Import started (Demo)') },
+          { label: 'Export', icon: Download, variant: 'secondary', onClick: () => alert('Export started (Demo)') },
+          { label: 'Add Factor', icon: Plus, variant: 'primary', onClick: () => setModalOpen(true) }
+        ]}
+      />
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card title="Total Factors" value="142" icon={Settings} />
+        <Card title="Active Factors" value="128" icon={Leaf} />
+        <Card title="Countries Covered" value="45" />
+        <Card title="Last Updated" value="Today" />
       </div>
+
+      <DataTable 
+        columns={columns} 
+        data={emissionFactors} 
+        searchPlaceholder="Search factors by name or country..."
+        onSearch={() => {}}
+      />
+
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setModalOpen(false)}
+        title="Add Emission Factor"
+        footerActions={[
+          { label: 'Cancel', onClick: () => setModalOpen(false) },
+          { label: 'Save Factor', variant: 'primary', onClick: () => { showToast('Factor added successfully!'); setModalOpen(false); } }
+        ]}
+      >
+        <div className="space-y-4">
+          <Input label="Factor Name" placeholder="e.g. Grid Electricity" />
+          <Input label="Category" placeholder="e.g. Energy" />
+          <Input label="Unit" placeholder="e.g. kWh" />
+          <Input label="CO₂e Value" type="number" />
+          <Input label="Country" placeholder="e.g. US" />
+        </div>
+      </Modal>
     </div>
   );
+}
+
+function ProductProfiles() {
+  const columns = [
+    { header: 'Product Name', accessor: 'name', className: 'font-medium text-gray-900' },
+    { header: 'SKU', accessor: 'sku' },
+    { header: 'Category', accessor: 'category' },
+    { 
+      header: 'ESG Score', 
+      accessor: 'score',
+      render: (row) => (
+        <span className={`font-bold ${row.score >= 80 ? 'text-green-600' : 'text-yellow-600'}`}>
+          {row.score}/100
+        </span>
+      )
+    },
+    { header: 'Carbon Footprint', accessor: 'carbon' },
+    { header: 'Water Usage', accessor: 'water' },
+    { header: 'Renewable %', accessor: 'renewable' },
+  ];
+
+  return (
+    <div>
+      <PageHeader 
+        title="Product ESG Profiles" 
+        breadcrumbs={[{ label: 'Environmental' }, { label: 'Product Profiles' }]}
+        actions={[{ label: 'New Product Profile', icon: Plus, variant: 'primary', onClick: () => alert('New Product Profile started (Demo)') }]}
+      />
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card title="Total Products" value="84" icon={Package} />
+        <Card title="Avg ESG Score" value="76/100" />
+        <Card title="Certified Products" value="42" />
+        <Card title="High Carbon Products" value="12" />
+      </div>
+
+      <DataTable 
+        columns={columns} 
+        data={productProfiles} 
+        searchPlaceholder="Search products by SKU or Name..."
+        onSearch={() => {}}
+      />
+    </div>
+  );
+}
+
+function CarbonTransactions() {
+  const columns = [
+    { header: 'Transaction ID', accessor: 'id', className: 'font-medium text-gray-900' },
+    { header: 'Vendor', accessor: 'vendor' },
+    { header: 'Quantity (tCO2e)', accessor: 'quantity' },
+    { header: 'Price per ton', accessor: 'price' },
+    { header: 'Date', accessor: 'date' },
+    { 
+      header: 'Status', 
+      accessor: 'status',
+      render: (row) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+          row.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+        }`}>
+          {row.status}
+        </span>
+      )
+    },
+  ];
+
+  return (
+    <div>
+      <PageHeader 
+        title="Carbon Transactions" 
+        breadcrumbs={[{ label: 'Environmental' }, { label: 'Carbon Transactions' }]}
+        actions={[
+          { label: 'Upload Certificate', icon: Upload, variant: 'secondary', onClick: () => alert('Upload Certificate started (Demo)') },
+          { label: 'Buy Credits', icon: Plus, variant: 'primary', onClick: () => alert('Buy Credits started (Demo)') }
+        ]}
+      />
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card title="Purchased Credits" value="12,400" />
+        <Card title="Sold Credits" value="500" />
+        <Card title="Available Credits" value="2,500" />
+        <Card title="Retired Credits" value="9,400" />
+      </div>
+
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
+        <h3 className="text-lg font-semibold mb-4">Monthly Carbon Credit Transactions</h3>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={transactionData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="purchased" fill="#10b981" name="Purchased" />
+              <Bar dataKey="retired" fill="#f59e0b" name="Retired" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <DataTable 
+        columns={columns} 
+        data={transactions} 
+        searchPlaceholder="Search transactions..."
+        onSearch={() => {}}
+      />
+    </div>
+  );
+}
+
+function EnvironmentalGoals() {
+  const columns = [
+    { header: 'Goal Name', accessor: 'name', className: 'font-medium text-gray-900' },
+    { header: 'Department', accessor: 'department' },
+    { 
+      header: 'Progress', 
+      accessor: 'progress',
+      render: (row) => (
+        <div className="w-full max-w-[200px] flex items-center gap-2">
+          <div className="flex-grow bg-gray-200 rounded-full h-2.5">
+            <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${row.progress}%` }}></div>
+          </div>
+          <span className="text-xs text-gray-500 w-8">{row.progress}%</span>
+        </div>
+      )
+    },
+    { header: 'Target', accessor: 'target' },
+    { header: 'Current', accessor: 'current' },
+    { header: 'Deadline', accessor: 'deadline' },
+    { header: 'Owner', accessor: 'owner' },
+    { 
+      header: 'Status', 
+      accessor: 'status',
+      render: (row) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+          row.status === 'On Track' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {row.status}
+        </span>
+      )
+    },
+  ];
+
+  return (
+    <div>
+      <PageHeader 
+        title="Environmental Goals" 
+        breadcrumbs={[{ label: 'Environmental' }, { label: 'Goals' }]}
+        actions={[{ label: 'Create Goal', icon: Target, variant: 'primary', onClick: () => alert('Create Goal started (Demo)') }]}
+      />
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card title="Active Goals" value="12" icon={Target} />
+        <Card title="Completed Goals" value="34" />
+        <Card title="Delayed Goals" value="2" />
+        <Card title="Upcoming Goals" value="5" />
+      </div>
+
+      <DataTable 
+        columns={columns} 
+        data={goals} 
+        searchPlaceholder="Search goals..."
+        onSearch={() => {}}
+      />
+    </div>
+  );
+}
+
+export default function EmissionsPage() {
+  const location = useLocation();
+  const path = location.pathname;
+
+  if (path.includes('emission-factors')) return <div className="p-8"><EmissionFactors /></div>;
+  if (path.includes('product-profiles')) return <div className="p-8"><ProductProfiles /></div>;
+  if (path.includes('carbon-transactions')) return <div className="p-8"><CarbonTransactions /></div>;
+  if (path.includes('environmental-goals')) return <div className="p-8"><EnvironmentalGoals /></div>;
+
+  // Fallback if just /environmental
+  return <div className="p-8"><EmissionFactors /></div>;
 }

@@ -101,36 +101,39 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       {/* Mobile menu button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-green-600 text-white md:hidden"
+        className="fixed top-4 left-4 z-50 p-2 rounded-lg text-white md:hidden"
+        style={{ backgroundColor: 'var(--sidebar-active)' }}
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-green-700 to-green-800 text-white transform transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 text-white transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0 md:static flex flex-col`}
+        style={{ backgroundColor: 'var(--sidebar-bg)' }}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-green-600 flex-shrink-0">
-          <h1 className="text-2xl font-bold text-white">EcoSphere</h1>
-          <p className="text-green-200 text-sm">ESG Platform</p>
+        <div className="p-6 border-b border-white/10 flex-shrink-0">
+          <h1 className="text-2xl font-bold font-serif tracking-tight" style={{ color: 'var(--surface)' }}>EcoSphere</h1>
+          <p className="text-sm font-sans tracking-wide" style={{ color: 'var(--muted)' }}>ESG Platform</p>
         </div>
 
         {/* User Info */}
-        <div className="p-6 border-b border-green-600 flex-shrink-0">
-          <p className="text-sm text-green-200">Logged in as</p>
-          <p className="font-semibold">{user?.name || 'User'}</p>
-          <p className="text-xs text-green-200">{user?.role || 'Admin'}</p>
+        <div className="p-6 border-b border-white/10 flex-shrink-0">
+          <p className="text-sm font-sans uppercase tracking-widest text-[10px]" style={{ color: 'var(--muted)' }}>Logged in as</p>
+          <p className="font-semibold text-sm mt-1">{user?.name || 'User'}</p>
+          <p className="text-xs mt-0.5 opacity-80">{user?.role || 'Admin'}</p>
         </div>
 
         {/* Menu Items */}
-        <nav className="p-4 space-y-1 flex-grow overflow-y-auto pb-24">
+        <nav className="p-4 space-y-1 flex-grow overflow-y-auto pb-24 font-sans">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const isMenuExpanded = expandedMenus[item.path] || isActive(item.path);
+            const isCurrentActive = isActive(item.path);
 
             return (
               <div key={item.path} className="flex flex-col">
@@ -138,7 +141,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   onClick={() => {
                     if (hasSubItems) {
                       toggleMenu(item.path);
-                      if (!isMenuExpanded && !isActive(item.path)) {
+                      if (!isMenuExpanded && !isCurrentActive) {
                         navigate(item.path);
                       }
                     } else {
@@ -146,40 +149,51 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                       setIsOpen(false);
                     }
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
-                    isActive(item.path)
-                      ? 'bg-white text-green-700 font-semibold'
-                      : 'text-green-100 hover:bg-green-600'
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+                    isCurrentActive
+                      ? 'text-white border-l-4'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5 border-l-4 border-transparent'
                   }`}
+                  style={{ 
+                    backgroundColor: isCurrentActive ? 'var(--sidebar-active)' : 'transparent',
+                    borderLeftColor: isCurrentActive ? 'var(--surface)' : 'transparent'
+                  }}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon size={20} />
+                    <Icon size={18} strokeWidth={isCurrentActive ? 2.5 : 2} />
                     {item.label}
                   </div>
                   {hasSubItems && (
-                    isMenuExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
+                    isMenuExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />
                   )}
                 </button>
 
                 {/* Sub Items */}
                 {hasSubItems && isMenuExpanded && (
-                  <div className="ml-4 mt-1 space-y-1 border-l-2 border-green-600 pl-2">
-                    {item.subItems.map((subItem) => (
-                      <button
-                        key={subItem.path}
-                        onClick={() => {
-                          navigate(subItem.path);
-                          setIsOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-colors ${
-                          isExactActive(subItem.path)
-                            ? 'bg-green-600 text-white font-medium'
-                            : 'text-green-200 hover:text-white hover:bg-green-600/50'
-                        }`}
-                      >
-                        {subItem.label}
-                      </button>
-                    ))}
+                  <div className="mt-1 space-y-1 relative before:content-[''] before:absolute before:left-[1.35rem] before:top-0 before:bottom-0 before:w-[1px] before:bg-white/10">
+                    {item.subItems.map((subItem) => {
+                      const isSubActive = isExactActive(subItem.path);
+                      return (
+                        <button
+                          key={subItem.path}
+                          onClick={() => {
+                            navigate(subItem.path);
+                            setIsOpen(false);
+                          }}
+                          className={`w-full text-left pl-11 pr-4 py-2 text-[13px] transition-colors relative flex items-center ${
+                            isSubActive
+                              ? 'text-white font-medium'
+                              : 'text-gray-400 font-normal hover:text-white'
+                          }`}
+                        >
+                          {/* Accent bar for active sub item */}
+                          {isSubActive && (
+                            <span className="absolute left-[1.35rem] w-[2px] h-4 -translate-x-1/2 rounded-full" style={{ backgroundColor: 'var(--surface)' }}></span>
+                          )}
+                          {subItem.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -187,13 +201,13 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           })}
         </nav>
 
-        {/* Logout Button */}
-        <div className="p-4 border-t border-green-600 bg-green-800 flex-shrink-0">
+        {/* Logout Button (Ghost Text Link) */}
+        <div className="p-4 border-t border-white/10 flex-shrink-0">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-gray-400 hover:text-white font-medium text-sm transition-colors rounded-lg hover:bg-white/5"
           >
-            <LogOut size={20} />
+            <LogOut size={18} />
             Logout
           </button>
         </div>

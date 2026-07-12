@@ -161,6 +161,11 @@ model Challenge {
   evidence_required Boolean  @default(true)
   deadline          DateTime
   status            String   @default("Draft") // Draft | Active | Under Review | Completed | Archived
+  
+  team_based        Boolean  @default(false)
+  seasonal          Boolean  @default(false)
+  event_start_date  DateTime?
+  event_end_date    DateTime?
 
   category          Category @relation(fields: [category_id], references: [id])
   participations    ChallengeParticipation[]
@@ -234,4 +239,14 @@ model EmployeeWallet {
   employee_id     String   @id
   balance         Int      @default(0)
   lifetime_earned Int      @default(0)
+  streak_count    Int      @default(0)
+}
+
+model Kudos {
+  id               String   @id @default(uuid())
+  sender_id        String
+  receiver_id      String
+  message          String
+  points           Int      @default(50)
+  sent_date        DateTime @default(now())
 }

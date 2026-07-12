@@ -8,10 +8,10 @@ export declare class CsrActivitiesController {
     findAll(): import("@prisma/client").Prisma.PrismaPromise<{
         id: string;
         status: string;
+        department_id: string;
         title: string;
         category_id: string;
         description: string;
-        department_id: string;
         location: string;
         start_date: Date;
         end_date: Date;

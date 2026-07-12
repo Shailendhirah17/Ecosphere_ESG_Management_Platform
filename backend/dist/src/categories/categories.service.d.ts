@@ -8,8 +8,8 @@ export declare class CategoriesService {
     findAll(): import("@prisma/client").Prisma.PrismaPromise<{
         id: string;
         name: string;
-        type: string;
         status: string;
+        type: string;
     }[]>;
     findOne(id: number): string;
     update(id: number, updateCategoryDto: UpdateCategoryDto): string;

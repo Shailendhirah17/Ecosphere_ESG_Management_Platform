@@ -9,6 +9,7 @@ export declare class EmployeeWalletsController {
         employee_id: string;
         balance: number;
         lifetime_earned: number;
+        streak_count: number;
     }[]>;
     findOne(id: string): string;
     update(id: string, updateEmployeeWalletDto: UpdateEmployeeWalletDto): string;

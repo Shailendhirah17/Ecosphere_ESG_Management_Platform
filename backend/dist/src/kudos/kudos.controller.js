@@ -12,51 +12,51 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ChallengesController = void 0;
+exports.KudosController = void 0;
 const common_1 = require("@nestjs/common");
-const challenges_service_1 = require("./challenges.service");
-let ChallengesController = class ChallengesController {
-    challengesService;
-    constructor(challengesService) {
-        this.challengesService = challengesService;
+const kudos_service_1 = require("./kudos.service");
+let KudosController = class KudosController {
+    kudosService;
+    constructor(kudosService) {
+        this.kudosService = kudosService;
     }
-    create(createChallengeDto) {
-        return this.challengesService.create(createChallengeDto);
+    create(createKudoDto) {
+        return this.kudosService.create(createKudoDto);
     }
     findAll() {
-        return this.challengesService.findAll();
+        return this.kudosService.findAll();
     }
     findOne(id) {
-        return this.challengesService.findOne(id);
+        return this.kudosService.findOne(id);
     }
-    update(id, updateChallengeDto) {
-        return this.challengesService.update(id, updateChallengeDto);
+    update(id, updateKudoDto) {
+        return this.kudosService.update(+id, updateKudoDto);
     }
     remove(id) {
-        return this.challengesService.remove(id);
+        return this.kudosService.remove(+id);
     }
 };
-exports.ChallengesController = ChallengesController;
+exports.KudosController = KudosController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
-], ChallengesController.prototype, "create", null);
+], KudosController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
-], ChallengesController.prototype, "findAll", null);
+], KudosController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
-], ChallengesController.prototype, "findOne", null);
+], KudosController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -64,16 +64,16 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
-], ChallengesController.prototype, "update", null);
+], KudosController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
-], ChallengesController.prototype, "remove", null);
-exports.ChallengesController = ChallengesController = __decorate([
-    (0, common_1.Controller)('challenges'),
-    __metadata("design:paramtypes", [challenges_service_1.ChallengesService])
-], ChallengesController);
-//# sourceMappingURL=challenges.controller.js.map
+], KudosController.prototype, "remove", null);
+exports.KudosController = KudosController = __decorate([
+    (0, common_1.Controller)('kudos'),
+    __metadata("design:paramtypes", [kudos_service_1.KudosService])
+], KudosController);
+//# sourceMappingURL=kudos.controller.js.map

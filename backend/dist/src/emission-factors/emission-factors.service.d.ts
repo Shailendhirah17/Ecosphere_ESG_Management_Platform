@@ -7,56 +7,56 @@ export declare class EmissionFactorsService {
     create(createEmissionFactorDto: CreateEmissionFactorDto): import("@prisma/client").Prisma.Prisma__EmissionFactorClient<{
         id: string;
         name: string;
+        status: string;
         activity_type: string;
         unit: string;
         co2e_per_unit: number;
         source: string;
         effective_from: Date;
         effective_to: Date | null;
-        status: string;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     findAll(activity_type?: string): import("@prisma/client").Prisma.PrismaPromise<{
         id: string;
         name: string;
+        status: string;
         activity_type: string;
         unit: string;
         co2e_per_unit: number;
         source: string;
         effective_from: Date;
         effective_to: Date | null;
-        status: string;
     }[]>;
     findOne(id: string): import("@prisma/client").Prisma.Prisma__EmissionFactorClient<{
         id: string;
         name: string;
+        status: string;
         activity_type: string;
         unit: string;
         co2e_per_unit: number;
         source: string;
         effective_from: Date;
         effective_to: Date | null;
-        status: string;
     } | null, null, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     update(id: string, updateEmissionFactorDto: UpdateEmissionFactorDto): import("@prisma/client").Prisma.Prisma__EmissionFactorClient<{
         id: string;
         name: string;
+        status: string;
         activity_type: string;
         unit: string;
         co2e_per_unit: number;
         source: string;
         effective_from: Date;
         effective_to: Date | null;
-        status: string;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     remove(id: string): import("@prisma/client").Prisma.Prisma__EmissionFactorClient<{
         id: string;
         name: string;
+        status: string;
         activity_type: string;
         unit: string;
         co2e_per_unit: number;
         source: string;
         effective_from: Date;
         effective_to: Date | null;
-        status: string;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
 }

@@ -6,12 +6,12 @@ export declare class DepartmentsService {
     constructor(prisma: PrismaService);
     create(createDepartmentDto: CreateDepartmentDto): import("@prisma/client").Prisma.Prisma__DepartmentClient<{
         id: string;
-        name: string;
         code: string;
+        name: string;
         head_employee_id: string | null;
+        parent_department_id: string | null;
         employee_count: number;
         status: string;
-        parent_department_id: string | null;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     findAll(): import("@prisma/client").Prisma.PrismaPromise<({
         _count: {
@@ -20,38 +20,38 @@ export declare class DepartmentsService {
         };
     } & {
         id: string;
-        name: string;
         code: string;
+        name: string;
         head_employee_id: string | null;
+        parent_department_id: string | null;
         employee_count: number;
         status: string;
-        parent_department_id: string | null;
     })[]>;
     findOne(id: string): import("@prisma/client").Prisma.Prisma__DepartmentClient<{
         id: string;
-        name: string;
         code: string;
+        name: string;
         head_employee_id: string | null;
+        parent_department_id: string | null;
         employee_count: number;
         status: string;
-        parent_department_id: string | null;
     } | null, null, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     update(id: string, updateDepartmentDto: UpdateDepartmentDto): import("@prisma/client").Prisma.Prisma__DepartmentClient<{
         id: string;
-        name: string;
         code: string;
+        name: string;
         head_employee_id: string | null;
+        parent_department_id: string | null;
         employee_count: number;
         status: string;
-        parent_department_id: string | null;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     remove(id: string): import("@prisma/client").Prisma.Prisma__DepartmentClient<{
         id: string;
-        name: string;
         code: string;
+        name: string;
         head_employee_id: string | null;
+        parent_department_id: string | null;
         employee_count: number;
         status: string;
-        parent_department_id: string | null;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
 }

@@ -9,35 +9,46 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ChallengesService = void 0;
+exports.KudosService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
-let ChallengesService = class ChallengesService {
+const MAX_KUDOS_PER_MONTH = 5;
+let KudosService = class KudosService {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
     }
-    create(data) {
-        return this.prisma.challenge.create({ data });
+    async create(data) {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        const count = await this.prisma.kudos.count({
+            where: {
+                sender_id: data.sender_id,
+                sent_date: { gte: startOfMonth }
+            }
+        });
+        if (count >= MAX_KUDOS_PER_MONTH) {
+            throw new common_1.BadRequestException(`Monthly limit of ${MAX_KUDOS_PER_MONTH} kudos reached.`);
+        }
+        return this.prisma.kudos.create({ data });
     }
     findAll() {
-        return this.prisma.challenge.findMany({
-            include: { category: true }
-        });
+        return this.prisma.kudos.findMany({ orderBy: { sent_date: 'desc' } });
     }
     findOne(id) {
-        return this.prisma.challenge.findUnique({ where: { id } });
+        return this.prisma.kudos.findUnique({ where: { id } });
     }
-    update(id, data) {
-        return this.prisma.challenge.update({ where: { id }, data });
+    update(id, updateKudosDto) {
+        return `This action updates a #${id} kudos`;
     }
     remove(id) {
-        return this.prisma.challenge.delete({ where: { id } });
+        return `This action removes a #${id} kudos`;
     }
 };
-exports.ChallengesService = ChallengesService;
-exports.ChallengesService = ChallengesService = __decorate([
+exports.KudosService = KudosService;
+exports.KudosService = KudosService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])
-], ChallengesService);
-//# sourceMappingURL=challenges.service.js.map
+], KudosService);
+//# sourceMappingURL=kudos.service.js.map

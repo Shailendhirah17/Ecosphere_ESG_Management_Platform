@@ -6,9 +6,9 @@ export declare class EsgPoliciesService {
     constructor(prisma: PrismaService);
     create(createEsgPolicyDto: CreateEsgPolicyDto): string;
     findAll(): import("@prisma/client").Prisma.PrismaPromise<{
-        category: string;
         id: string;
         status: string;
+        category: string;
         title: string;
         version: string;
         document_url: string;

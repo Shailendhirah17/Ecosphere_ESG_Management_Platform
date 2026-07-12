@@ -19,9 +19,10 @@ import { BadgesModule } from './badges/badges.module';
 import { RewardsModule } from './rewards/rewards.module';
 import { EmployeeWalletsModule } from './employee-wallets/employee-wallets.module';
 import { DepartmentScoresModule } from './department-scores/department-scores.module';
+import { KudosModule } from './kudos/kudos.module';
 
 @Module({
-  imports: [DepartmentsModule, EmissionFactorsModule, CarbonTransactionsModule, EnvironmentalGoalsModule, PrismaModule, CategoriesModule, CsrActivitiesModule, EmployeeParticipationsModule, EsgPoliciesModule, PolicyAcknowledgementsModule, AuditsModule, ComplianceIssuesModule, ChallengesModule, ChallengeParticipationsModule, BadgesModule, RewardsModule, EmployeeWalletsModule, DepartmentScoresModule],
+  imports: [DepartmentsModule, EmissionFactorsModule, CarbonTransactionsModule, EnvironmentalGoalsModule, PrismaModule, CategoriesModule, CsrActivitiesModule, EmployeeParticipationsModule, EsgPoliciesModule, PolicyAcknowledgementsModule, AuditsModule, ComplianceIssuesModule, ChallengesModule, ChallengeParticipationsModule, BadgesModule, RewardsModule, EmployeeWalletsModule, DepartmentScoresModule, KudosModule],
   controllers: [AppController],
   providers: [AppService],
 })

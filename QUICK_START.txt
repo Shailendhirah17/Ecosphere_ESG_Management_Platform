@@ -1,0 +1,242 @@
+# 🎯 EcoSphere - LOCALHOST QUICK START GUIDE
+
+## 📌 COPY THESE COMMANDS
+
+### Step 1: Setup (One-Time)
+```bash
+cd "/Users/shailendhirah/Downloads/EcoSphere – ESG Management Platform"
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS ecosphere_db;"
+cd backend && npm install && cd ../frontend && npm install
+```
+
+### Step 2: Start Backend (Terminal 1)
+```bash
+cd "/Users/shailendhirah/Downloads/EcoSphere – ESG Management Platform/backend"
+npm run dev
+```
+
+### Step 3: Start Frontend (Terminal 2)
+```bash
+cd "/Users/shailendhirah/Downloads/EcoSphere – ESG Management Platform/frontend"
+npm run dev
+```
+
+### Step 4: Open Browser
+```
+http://localhost:5173
+```
+
+---
+
+## 🌐 LOCALHOST URLs
+
+```
+┌─────────────────────────────────────┐
+│     ECOSPHERE LOCAL DEVELOPMENT      │
+├─────────────────────────────────────┤
+│ Frontend:   http://localhost:5173   │
+│ Backend:    http://localhost:5000   │
+│ API:        http://localhost:5000   │
+│             /api/v1                 │
+├─────────────────────────────────────┤
+│ Database:   localhost:3306          │
+│ User:       root                    │
+│ Password:   password123             │
+│ Database:   ecosphere_db            │
+└─────────────────────────────────────┘
+```
+
+---
+
+## ⚡ FASTEST WAY TO RUN
+
+### Copy This Exact Path:
+```bash
+cd "/Users/shailendhirah/Downloads/EcoSphere – ESG Management Platform"
+```
+
+### Terminal 1:
+```bash
+cd backend && npm run dev
+```
+
+### Terminal 2:
+```bash
+cd frontend && npm run dev
+```
+
+### Open This URL:
+```
+http://localhost:5173
+```
+
+---
+
+## 🔑 LOGIN INFO
+
+**First Time:**
+- Go to: http://localhost:5173
+- Click: Register
+- Create new account
+
+**Or Use Test API:**
+```bash
+curl -X POST http://localhost:5000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123"}'
+```
+
+---
+
+## ✅ VERIFY IT'S WORKING
+
+### Check Backend:
+```bash
+curl http://localhost:5000/health
+```
+Should return: `{"status":"Server is running"...}`
+
+### Check Frontend:
+Open browser: http://localhost:5173
+Should show: EcoSphere login page
+
+---
+
+## 🆘 IF SOMETHING DOESN'T WORK
+
+### Frontend won't load at 5173?
+```bash
+# Kill process on port 5173
+lsof -i :5173 | grep LISTEN | awk '{print $2}' | xargs kill -9
+
+# Restart frontend
+cd frontend && npm run dev
+```
+
+### Backend won't start at 5000?
+```bash
+# Kill process on port 5000
+lsof -i :5000 | grep LISTEN | awk '{print $2}' | xargs kill -9
+
+# Check MySQL is running
+brew services list | grep mysql
+
+# If not running:
+brew services start mysql
+
+# Restart backend
+cd backend && npm run dev
+```
+
+### Database connection error?
+```bash
+# Start MySQL
+brew services start mysql
+
+# Create database
+mysql -u root -p -e "CREATE DATABASE ecosphere_db;"
+```
+
+---
+
+## 📊 WHAT'S AVAILABLE
+
+### On Frontend (http://localhost:5173)
+- ✅ Login / Register page
+- ✅ Dashboard with charts
+- ✅ Challenges page
+- ✅ Leaderboard page
+- ✅ Responsive design
+
+### On Backend (http://localhost:5000/api/v1)
+- ✅ Authentication endpoints
+- ✅ Department management
+- ✅ Employee management
+- ✅ Environmental tracking
+- ✅ Social activities
+- ✅ Gamification
+- ✅ Reports
+- ✅ Admin functions
+
+---
+
+## 🎯 MOST IMPORTANT URLs
+
+```
+Frontend App:     http://localhost:5173
+Backend API:      http://localhost:5000/api/v1
+Health Check:     http://localhost:5000/health
+```
+
+**That's it! Those are your 3 main URLs.**
+
+---
+
+## 🚀 YOU'RE DONE WHEN
+
+✅ Backend running on port 5000  
+✅ Frontend running on port 5173  
+✅ Browser shows http://localhost:5173  
+✅ You see EcoSphere login page  
+
+---
+
+## 📱 QUICK FEATURE TEST
+
+1. Register at http://localhost:5173
+2. Login with your credentials
+3. See Dashboard with charts
+4. Go to Gamification → See Challenges
+5. Go to Leaderboard → See Rankings
+
+---
+
+## 💡 REMEMBER
+
+- **2 Servers Running:**
+  - Backend on 5000
+  - Frontend on 5173
+
+- **2 Separate Terminals:**
+  - Terminal 1 for Backend
+  - Terminal 2 for Frontend
+
+- **Default Database:**
+  - Name: ecosphere_db
+  - User: root
+  - Password: password123
+
+---
+
+## 🎉 SUMMARY
+
+```
+Setup:        npm install (backend + frontend)
+Start:        npm run dev (2 terminal tabs)
+Frontend:     http://localhost:5173
+Backend:      http://localhost:5000
+API:          http://localhost:5000/api/v1
+```
+
+---
+
+**READY? START HERE:**
+
+Terminal 1:
+```bash
+cd "/Users/shailendhirah/Downloads/EcoSphere – ESG Management Platform/backend"
+npm run dev
+```
+
+Terminal 2:
+```bash
+cd "/Users/shailendhirah/Downloads/EcoSphere – ESG Management Platform/frontend"
+npm run dev
+```
+
+Browser:
+```
+http://localhost:5173
+```
+
+**That's it! Enjoy! 🚀**
